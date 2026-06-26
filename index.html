@@ -654,8 +654,8 @@
 
       <div class="channel-cta">
         <p class="author">СИЛА РОДА · Оксана Лазарева</p>
-        <p>Вы уже увидели свой сценарий — теперь можно пойти глубже: разобрать его лично или продолжить путь на канале с практиками и историями клиентов.</p>
-        <a class="btn btn-primary" id="btn-consultation" href="https://t.me/s_c_h_a_s_t_y_e" target="_blank" rel="noopener">Записаться на личную консультацию</a>
+        <p>Вы уже увидели свой сценарий — теперь можно пойти глубже. При записи через личные сообщения — <strong>бесплатная диагностика на 20 минут</strong>. Или продолжите путь на канале с практиками и историями клиентов.</p>
+        <a class="btn btn-primary" id="btn-consultation" href="https://t.me/s_c_h_a_s_t_y_e" target="_blank" rel="noopener">Записаться на бесплатную диагностику (20 мин)</a>
         <a class="btn btn-secondary" href="https://t.me/+Kcq2_-7pUoxmNjk6" target="_blank" rel="noopener">Подписаться на канал и узнать, как с этим работать</a>
         <button class="btn btn-secondary" id="btn-restart">Пройти заново</button>
       </div>
@@ -670,8 +670,8 @@
       <h3 id="modal-title"></h3>
       <div id="modal-body"></div>
       <div class="channel-cta" style="margin-top:20px; padding:18px;">
-        <p style="margin-bottom:12px; font-size:13px;">Хотите разобрать этот корень глубже после своего разбора?</p>
-        <a class="btn btn-primary" id="modal-btn-consultation" href="https://t.me/s_c_h_a_s_t_y_e" target="_blank" rel="noopener">Личная консультация</a>
+        <p style="margin-bottom:12px; font-size:13px;">Хотите разобрать этот корень глубже? Запишитесь на <strong>бесплатную диагностику на 20 минут</strong> в личных сообщениях.</p>
+        <a class="btn btn-primary" id="modal-btn-consultation" href="https://t.me/s_c_h_a_s_t_y_e" target="_blank" rel="noopener">Бесплатная диагностика (20 мин)</a>
         <a class="btn btn-secondary" href="https://t.me/+Kcq2_-7pUoxmNjk6" target="_blank" rel="noopener">Подписаться на канал и узнать, как с этим работать</a>
       </div>
     </div>
@@ -902,69 +902,78 @@
       answers = [];
       currentQuestion = 0;
       lastResult = null;
+      modalFocusRootId = null;
     }
 
     function buildConsultationMessage(extra = {}) {
       const { focusRootId } = extra;
-      const lines = [
-        'Здравствуйте, Оксана!',
-        '',
-        'Пришла с интерактива «Денежная карта рода» — хочу записаться на личную консультацию.',
-        ''
+      const parts = [
+        'Здравствуйте, Оксана! С интерактива «Денежная карта рода», хочу на бесплатную диагностику 20 мин.'
       ];
 
       if (lastResult?.scenario) {
-        lines.push('Мой сценарий: ' + lastResult.scenario.name);
-        lines.push('');
+        parts.push('Сценарий: ' + lastResult.scenario.name.replace(/[«»]/g, ''));
       }
 
       if (lastResult?.activeRoots?.length) {
-        lines.push('Сильнее всего откликаются корни:');
-        lastResult.activeRoots.forEach(id => {
-          lines.push('• ' + ROOTS[id].title);
-        });
-        lines.push('');
+        parts.push('Корни: ' + lastResult.activeRoots.slice(0, 3).map(id => ROOTS[id].title).join(', '));
       }
 
-      if (lastResult?.metrics?.length) {
-        lines.push('Показатели:');
-        lastResult.metrics.forEach(m => {
-          lines.push('• ' + m.name + ' — ' + m.displayLabel);
-        });
-        lines.push('');
-      }
-
-      if (lastResult?.answerLines?.length) {
-        lines.push('Мои ответы в интерактиве:');
-        lastResult.answerLines.forEach(line => lines.push(line));
-        lines.push('');
+      if (lastResult?.answerTexts?.length) {
+        parts.push('Ответы: ' + lastResult.answerTexts.join('; '));
       }
 
       if (focusRootId && ROOTS[focusRootId]) {
-        lines.push('Сейчас особенно хочу разобрать корень: «' + ROOTS[focusRootId].title + '»');
-        lines.push('');
+        parts.push('Разобрать корень: ' + ROOTS[focusRootId].title);
       }
 
-      lines.push('Буду рада записаться на консультацию и разобрать это глубже.');
-      return lines.join('\n');
+      return parts.join('\n');
     }
 
     function consultationUrl(extra = {}) {
-      const text = buildConsultationMessage(extra);
-      const maxLen = 1500;
-      const trimmed = text.length > maxLen ? text.slice(0, maxLen - 20) + '\n…' : text;
-      return CONSULTATION_TELEGRAM + '?text=' + encodeURIComponent(trimmed);
+      const base = CONSULTATION_TELEGRAM + '?text=';
+      const maxUrlLen = 1500;
+      let text = buildConsultationMessage(extra);
+
+      while (text.length > 60 && (base + encodeURIComponent(text)).length > maxUrlLen) {
+        const lines = text.split('\n');
+        if (lines.length > 2) {
+          lines.pop();
+          text = lines.join('\n');
+        } else {
+          text = text.slice(0, Math.max(60, text.length - 30)).trim() + '…';
+        }
+      }
+
+      return base + encodeURIComponent(text);
+    }
+
+    let modalFocusRootId = null;
+
+    function openConsultation(extra = {}) {
+      window.open(consultationUrl(extra), '_blank', 'noopener,noreferrer');
     }
 
     function updateConsultationLinks(extra = {}) {
       const { focusRootId } = extra;
+      if (focusRootId) modalFocusRootId = focusRootId;
       const btn = document.getElementById('btn-consultation');
       const modalBtn = document.getElementById('modal-btn-consultation');
       if (btn) btn.href = consultationUrl();
-      if (modalBtn) modalBtn.href = consultationUrl(focusRootId ? { focusRootId } : {});
+      if (modalBtn) modalBtn.href = consultationUrl(modalFocusRootId ? { focusRootId: modalFocusRootId } : {});
     }
 
     mountTree('welcome-tree', { growth: 5, litRoots: [0, 1, 2, 3, 4], fullCanopy: true });
+
+    document.getElementById('btn-consultation').addEventListener('click', e => {
+      e.preventDefault();
+      openConsultation();
+    });
+
+    document.getElementById('modal-btn-consultation').addEventListener('click', e => {
+      e.preventDefault();
+      openConsultation(modalFocusRootId ? { focusRootId: modalFocusRootId } : {});
+    });
 
     document.getElementById('btn-start').addEventListener('click', () => {
       resetScores();
@@ -1103,10 +1112,7 @@
         btn.addEventListener('click', () => openRootModal(btn.dataset.root));
       });
 
-      const answerLines = QUESTIONS.map((q, i) => {
-        const ans = q.options[answers[i]];
-        return (i + 1) + '. ' + q.text + ' — ' + ans.text;
-      });
+      const answerTexts = QUESTIONS.map((q, i) => q.options[answers[i]].text);
 
       lastResult = {
         scenario,
@@ -1115,7 +1121,7 @@
           const displayLabel = m.invertDisplay && m.cls === 'low' ? 'выражен' : m.invertDisplay && m.cls === 'high' ? 'низкий' : m.label;
           return { name: m.name, displayLabel };
         }),
-        answerLines
+        answerTexts
       };
 
       updateConsultationLinks();
