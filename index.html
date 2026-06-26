@@ -655,8 +655,8 @@
       <div class="channel-cta">
         <p class="author">СИЛА РОДА · Оксана Лазарева</p>
         <p>Вы уже увидели свой сценарий — теперь можно пойти глубже: разобрать его лично или продолжить путь на канале с практиками и историями клиентов.</p>
-        <a class="btn btn-primary" href="https://t.me/s_c_h_a_s_t_y_e" target="_blank" rel="noopener">Записаться на личную консультацию</a>
-        <a class="btn btn-secondary" href="https://t.me/+Kcq2_-7pUoxmNjk6" target="_blank" rel="noopener">Подписаться на канал после разбора</a>
+        <a class="btn btn-primary" id="btn-consultation" href="https://t.me/s_c_h_a_s_t_y_e" target="_blank" rel="noopener">Записаться на личную консультацию</a>
+        <a class="btn btn-secondary" href="https://t.me/+Kcq2_-7pUoxmNjk6" target="_blank" rel="noopener">Подписаться на канал и узнать, как с этим работать</a>
         <button class="btn btn-secondary" id="btn-restart">Пройти заново</button>
       </div>
 
@@ -671,8 +671,8 @@
       <div id="modal-body"></div>
       <div class="channel-cta" style="margin-top:20px; padding:18px;">
         <p style="margin-bottom:12px; font-size:13px;">Хотите разобрать этот корень глубже после своего разбора?</p>
-        <a class="btn btn-primary" href="https://t.me/s_c_h_a_s_t_y_e" target="_blank" rel="noopener">Личная консультация</a>
-        <a class="btn btn-secondary" href="https://t.me/+Kcq2_-7pUoxmNjk6" target="_blank" rel="noopener">Подписаться на канал</a>
+        <a class="btn btn-primary" id="modal-btn-consultation" href="https://t.me/s_c_h_a_s_t_y_e" target="_blank" rel="noopener">Личная консультация</a>
+        <a class="btn btn-secondary" href="https://t.me/+Kcq2_-7pUoxmNjk6" target="_blank" rel="noopener">Подписаться на канал и узнать, как с этим работать</a>
       </div>
     </div>
   </div>
@@ -877,9 +877,12 @@
       }
     ];
 
+    const CONSULTATION_TELEGRAM = 'https://t.me/s_c_h_a_s_t_y_e';
+
     let currentQuestion = 0;
     let answers = [];
     let scores = {};
+    let lastResult = null;
 
     const screens = {
       welcome: document.getElementById('screen-welcome'),
@@ -898,6 +901,67 @@
       scores = { resource: 0, permission: 0, fearBig: 0, loyalty: 0, fearPoverty: 0, surpass: 0 };
       answers = [];
       currentQuestion = 0;
+      lastResult = null;
+    }
+
+    function buildConsultationMessage(extra = {}) {
+      const { focusRootId } = extra;
+      const lines = [
+        'Здравствуйте, Оксана!',
+        '',
+        'Пришла с интерактива «Денежная карта рода» — хочу записаться на личную консультацию.',
+        ''
+      ];
+
+      if (lastResult?.scenario) {
+        lines.push('Мой сценарий: ' + lastResult.scenario.name);
+        lines.push('');
+      }
+
+      if (lastResult?.activeRoots?.length) {
+        lines.push('Сильнее всего откликаются корни:');
+        lastResult.activeRoots.forEach(id => {
+          lines.push('• ' + ROOTS[id].title);
+        });
+        lines.push('');
+      }
+
+      if (lastResult?.metrics?.length) {
+        lines.push('Показатели:');
+        lastResult.metrics.forEach(m => {
+          lines.push('• ' + m.name + ' — ' + m.displayLabel);
+        });
+        lines.push('');
+      }
+
+      if (lastResult?.answerLines?.length) {
+        lines.push('Мои ответы в интерактиве:');
+        lastResult.answerLines.forEach(line => lines.push(line));
+        lines.push('');
+      }
+
+      if (focusRootId && ROOTS[focusRootId]) {
+        lines.push('Сейчас особенно хочу разобрать корень: «' + ROOTS[focusRootId].title + '»');
+        lines.push('');
+      }
+
+      lines.push('Буду рада записаться на консультацию и разобрать это глубже.');
+      return lines.join('\n');
+    }
+
+    function consultationUrl(extra = {}) {
+      const text = buildConsultationMessage(extra);
+      const maxLen = 1500;
+      const trimmed = text.length > maxLen ? text.slice(0, maxLen - 20) + '\n…' : text;
+      return CONSULTATION_TELEGRAM + '?text=' + encodeURIComponent(trimmed);
+    }
+
+    function updateConsultationLinks(extra = {}) {
+      const { focusRootId } = extra;
+      const btn = document.getElementById('btn-consultation');
+      const modalBtn = document.getElementById('modal-btn-consultation');
+      if (btn) btn.href = consultationUrl();
+      if (modalBtn) modalBtn.href = consultationUrl(focusRootId ? { focusRootId } : {});
     }
 
     mountTree('welcome-tree', { growth: 5, litRoots: [0, 1, 2, 3, 4], fullCanopy: true });
@@ -1038,6 +1102,23 @@
       document.querySelectorAll('.root-chip').forEach(btn => {
         btn.addEventListener('click', () => openRootModal(btn.dataset.root));
       });
+
+      const answerLines = QUESTIONS.map((q, i) => {
+        const ans = q.options[answers[i]];
+        return (i + 1) + '. ' + q.text + ' — ' + ans.text;
+      });
+
+      lastResult = {
+        scenario,
+        activeRoots,
+        metrics: metrics.map(m => {
+          const displayLabel = m.invertDisplay && m.cls === 'low' ? 'выражен' : m.invertDisplay && m.cls === 'high' ? 'низкий' : m.label;
+          return { name: m.name, displayLabel };
+        }),
+        answerLines
+      };
+
+      updateConsultationLinks();
     }
 
     function openRootModal(id) {
@@ -1050,6 +1131,7 @@
         <div class="modal-block"><strong>Что обычно чувствует человек</strong><p>${root.feeling}</p></div>
         <div class="modal-block"><strong>Признаки</strong><p>${root.signs}</p></div>
       `;
+      updateConsultationLinks({ focusRootId: id });
       document.getElementById('modal').classList.add('open');
     }
 
