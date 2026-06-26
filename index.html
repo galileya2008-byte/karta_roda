@@ -1,0 +1,1069 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Денежная карта рода — интерактив</title>
+  <meta name="description" content="За 3 минуты определите, какой родовой сценарий может влиять на ваши отношения с деньгами.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #0e0612;
+      --bg-card: rgba(28, 12, 38, 0.94);
+      --gold: #ff00aa;
+      --gold-light: #f5a8e8;
+      --gold-glow: rgba(255, 0, 170, 0.4);
+      --fuchsia: #ff1493;
+      --purple: #9333ea;
+      --pink: #ec4899;
+      --lavender: #c084fc;
+      --text: #f3e8f8;
+      --text-muted: #b8a0c8;
+      --orange: #e879f9;
+      --red: #db2777;
+      --green-status: #e879f9;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 100%, rgba(147, 51, 234, 0.22) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 20% 20%, rgba(255, 0, 170, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 40% at 80% 30%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 24px 20px 40px;
+    }
+
+    .screen { display: none; animation: fadeIn 0.6s ease; }
+    .screen.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1, h2, h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+
+    .title-xl { font-size: clamp(2rem, 6vw, 2.6rem); margin-bottom: 16px; }
+    .title-lg { font-size: clamp(1.6rem, 5vw, 2rem); margin-bottom: 12px; }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.65;
+      margin-bottom: 28px;
+    }
+
+    .tree-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      margin: 0 auto 28px;
+      aspect-ratio: 2 / 3;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow:
+        0 20px 50px rgba(80, 0, 80, 0.45),
+        0 0 0 1px rgba(255, 0, 170, 0.22),
+        0 0 40px rgba(147, 51, 234, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .tree-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      background: radial-gradient(ellipse 85% 65% at 50% 45%, transparent 45%, rgba(40, 0, 60, 0.35) 100%);
+      border-radius: inherit;
+    }
+
+    .tree-wrap.compact { max-width: 280px; margin-bottom: 16px; }
+
+    .tree-wrap.idle .tree-scene {
+      animation: treeSway 9s ease-in-out infinite;
+      transform-origin: 50% 78%;
+    }
+
+    @keyframes treeSway {
+      0%, 100% { transform: rotate(-0.25deg); }
+      50% { transform: rotate(0.35deg); }
+    }
+
+    .tree-scene {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      --canopy-green: 1;
+      --scene-bright: 1;
+    }
+
+    .tree-art {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 40%;
+      display: block;
+    }
+
+    .tree-art--base {
+      filter: brightness(var(--scene-bright)) hue-rotate(288deg) saturate(1.35) contrast(1.04);
+      transition: filter 1s ease;
+    }
+
+    .tree-art--green {
+      filter: hue-rotate(305deg) saturate(2) brightness(0.9) contrast(1.08);
+      -webkit-mask-image: linear-gradient(to bottom, black 0%, black 42%, rgba(0,0,0,0.5) 52%, transparent 62%);
+      mask-image: linear-gradient(to bottom, black 0%, black 42%, rgba(0,0,0,0.5) 52%, transparent 62%);
+      opacity: calc(0.55 + var(--canopy-green) * 0.45);
+      transition: opacity 1s ease;
+      pointer-events: none;
+    }
+
+    .tree-mood-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(147, 51, 234, 0.2) 0%,
+        rgba(255, 0, 170, 0.1) 35%,
+        rgba(124, 58, 237, 0.08) 55%,
+        rgba(255, 20, 147, 0.12) 100%
+      );
+      mix-blend-mode: color;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .tree-canopy-tint {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 52%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 0, 170, 0.22) 0%,
+        rgba(192, 132, 252, 0.14) 45%,
+        rgba(236, 72, 153, 0.06) 70%,
+        transparent 100%
+      );
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+      z-index: 2;
+      opacity: var(--canopy-green);
+      transition: opacity 1s ease;
+    }
+
+    .tree-trunk-glow {
+      position: absolute;
+      left: 36%;
+      top: 48%;
+      width: 28%;
+      height: 32%;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(255, 0, 170, 0.45) 0%,
+        rgba(192, 132, 252, 0.2) 40%,
+        rgba(147, 51, 234, 0.08) 55%,
+        transparent 72%
+      );
+      pointer-events: none;
+      z-index: 2;
+      animation: trunkPulse 5s ease-in-out infinite;
+    }
+
+    @keyframes trunkPulse {
+      0%, 100% { opacity: 0.75; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    .root-glow-spot {
+      position: absolute;
+      border-radius: 45%;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0.15;
+      background: radial-gradient(ellipse at center, rgba(255, 0, 170, 0.12) 0%, transparent 68%);
+      transition: opacity 0.9s ease, box-shadow 0.9s ease, transform 0.9s ease;
+    }
+
+    .root-glow-spot.lit {
+      opacity: 1;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(255, 105, 200, 0.8) 0%,
+        rgba(255, 0, 170, 0.45) 35%,
+        rgba(192, 132, 252, 0.2) 55%,
+        transparent 72%
+      );
+      box-shadow: 0 0 28px rgba(255, 0, 170, 0.6), 0 0 12px rgba(255, 20, 147, 0.9);
+      animation: rootPulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes rootPulse {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.06); filter: brightness(1.15); }
+    }
+
+    .tree-particles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      overflow: hidden;
+    }
+
+    .tree-particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      animation: floatParticle 4s ease-in-out infinite;
+    }
+
+    @keyframes floatParticle {
+      0%, 100% { opacity: 0.2; transform: translateY(0) scale(0.8); }
+      50% { opacity: 1; transform: translateY(-8px) scale(1.2); }
+    }
+
+    .tree-scan {
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      height: 4px;
+      border-radius: 2px;
+      z-index: 5;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 0, 170, 0.95) 50%, transparent 100%);
+      box-shadow: 0 0 16px rgba(255, 20, 147, 0.9), 0 0 6px rgba(192, 132, 252, 0.8);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .tree-scan.active { animation: treeScanMove 2.6s ease-in-out infinite; }
+
+    @keyframes treeScanMove {
+      0% { top: 6%; opacity: 0; }
+      12% { opacity: 0.95; }
+      88% { opacity: 0.95; }
+      100% { top: 94%; opacity: 0; }
+    }
+
+    .tree-hotspots {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+    }
+
+    .root-hotspot {
+      position: absolute;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      border-radius: 45%;
+      transition: background 0.25s;
+    }
+
+    .root-hotspot:hover {
+      background: rgba(255, 0, 170, 0.14);
+      box-shadow: inset 0 0 24px rgba(255, 20, 147, 0.35);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--fuchsia) 0%, var(--purple) 55%, #7e22ce 100%);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(255, 0, 170, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(255, 20, 147, 0.55);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--gold-light);
+      border: 1px solid rgba(255, 0, 170, 0.45);
+      margin-top: 12px;
+    }
+
+    .btn-secondary:hover { background: rgba(255, 0, 170, 0.1); }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid rgba(192, 132, 252, 0.2);
+      border-radius: 20px;
+      padding: 28px 24px;
+      backdrop-filter: blur(12px);
+    }
+
+    .progress { display: flex; gap: 6px; margin-bottom: 24px; }
+
+    .progress-dot {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.08);
+      transition: background 0.4s;
+    }
+
+    .progress-dot.done { background: var(--gold); }
+    .progress-dot.current { background: linear-gradient(90deg, var(--fuchsia), rgba(192, 132, 252, 0.35)); }
+
+    .question-num { font-size: 12px; color: var(--gold); margin-bottom: 8px; }
+
+    .question-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.45rem;
+      margin-bottom: 24px;
+      line-height: 1.35;
+    }
+
+    .options { display: flex; flex-direction: column; gap: 10px; }
+
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      text-align: left;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    .option:hover {
+      border-color: rgba(255, 0, 170, 0.4);
+      background: rgba(147, 51, 234, 0.1);
+    }
+
+    .option-radio {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.25);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .loading-text {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      animation: pulse 1.5s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    .metrics { margin: 24px 0; display: flex; flex-direction: column; gap: 12px; }
+
+    .metric {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      font-size: 13px;
+    }
+
+    .metric-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .metric-dot.high { background: var(--green-status); }
+    .metric-dot.medium { background: var(--orange); }
+    .metric-dot.low { background: var(--red); }
+    .metric-label { flex: 1; }
+    .metric-value { color: var(--text-muted); font-size: 12px; }
+
+    .scenario-box {
+      margin: 24px 0;
+      padding: 20px;
+      border-left: 3px solid var(--fuchsia);
+      background: rgba(255, 0, 170, 0.07);
+      border-radius: 0 14px 14px 0;
+    }
+
+    .scenario-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      color: var(--gold-light);
+      margin-bottom: 12px;
+    }
+
+    .scenario-desc { font-size: 14px; line-height: 1.7; color: var(--text-muted); }
+
+    .next-steps { margin: 28px 0; }
+    .next-steps h3 { font-size: 1.2rem; margin-bottom: 14px; }
+
+    .check-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+    .check-list li {
+      display: flex;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .check-list li::before {
+      content: '◆';
+      color: var(--gold);
+      font-size: 10px;
+      margin-top: 4px;
+    }
+
+    .roots-section { margin-top: 32px; }
+    .roots-section h3 { font-size: 1.15rem; margin-bottom: 6px; }
+    .roots-hint { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+
+    .root-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .root-chip {
+      padding: 10px 16px;
+      background: rgba(88, 28, 135, 0.35);
+      border: 1px solid rgba(192, 132, 252, 0.35);
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .root-chip:hover {
+      background: rgba(124, 58, 237, 0.45);
+      border-color: var(--fuchsia);
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open { display: flex; animation: fadeIn 0.3s ease; }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 0, 170, 0.25);
+      border-radius: 24px 24px 20px 20px;
+      padding: 28px 24px 32px;
+      max-width: 480px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-close {
+      float: right;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 0 12px 12px;
+    }
+
+    .modal h3 { font-size: 1.4rem; margin-bottom: 20px; clear: both; }
+
+    .modal-block { margin-bottom: 18px; }
+
+    .modal-block strong {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+
+    .modal-block p { font-size: 14px; line-height: 1.65; color: var(--text-muted); }
+
+    .channel-cta {
+      margin-top: 28px;
+      padding: 24px;
+      background: linear-gradient(160deg, rgba(88, 28, 135, 0.45) 0%, rgba(14, 6, 18, 0.85) 100%);
+      border: 1px solid rgba(255, 0, 170, 0.28);
+      border-radius: 20px;
+      text-align: center;
+    }
+
+    .channel-cta p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .channel-cta .author {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      color: var(--gold-light);
+      margin-bottom: 4px;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(184, 160, 200, 0.45);
+      margin-top: 24px;
+      line-height: 1.5;
+    }
+
+    @media (min-width: 600px) {
+      .modal-overlay { align-items: center; }
+      .modal { border-radius: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section id="screen-welcome" class="screen active">
+      <p class="eyebrow">Интерактив · 3 минуты</p>
+      <h1 class="title-xl">Денежная карта рода</h1>
+      <p class="subtitle">За 3 минуты определите, какой родовой сценарий может влиять на ваши отношения с деньгами.</p>
+
+      <div class="tree-wrap idle" id="welcome-tree"></div>
+
+      <h2 class="title-lg" style="text-align:center; margin-bottom:12px;">Деньги редко исчезают случайно.</h2>
+      <p class="subtitle" style="text-align:center;">Иногда причиной становятся не знания и не навыки, а сценарии, которые передаются поколениями.</p>
+
+      <button class="btn btn-primary" id="btn-start">Начать исследование</button>
+    </section>
+
+    <section id="screen-loading" class="screen">
+      <div class="tree-wrap" id="loading-tree"></div>
+      <p class="loading-text">Система анализирует возможные родовые денежные установки...</p>
+    </section>
+
+    <section id="screen-quiz" class="screen">
+      <div class="tree-wrap compact" id="quiz-tree"></div>
+      <div class="card">
+        <div class="progress" id="progress"></div>
+        <p class="question-num" id="question-num"></p>
+        <p class="question-text" id="question-text"></p>
+        <div class="options" id="options"></div>
+      </div>
+    </section>
+
+    <section id="screen-result" class="screen">
+      <p class="eyebrow">Ваш результат</p>
+      <h1 class="title-lg">Денежная карта вашего рода</h1>
+      <div class="tree-wrap idle" id="result-tree"></div>
+
+      <div class="metrics" id="metrics"></div>
+
+      <div class="scenario-box">
+        <p class="scenario-name" id="scenario-name"></p>
+        <p class="scenario-desc" id="scenario-desc"></p>
+      </div>
+
+      <div class="next-steps">
+        <h3>Что можно сделать дальше?</h3>
+        <ul class="check-list">
+          <li>пройти полноценную диагностику родовой системы</li>
+          <li>разобрать денежную систему рода глубже</li>
+          <li>увидеть реальные причины именно вашего сценария</li>
+        </ul>
+      </div>
+
+      <div class="roots-section">
+        <h3>Исследуйте корни</h3>
+        <p class="roots-hint">Нажмите на светящийся корень у основания дерева или карточку ниже — узнайте, как сценарий проявляется в жизни.</p>
+        <div class="root-chips" id="root-chips"></div>
+      </div>
+
+      <div class="channel-cta">
+        <p class="author">СИЛА РОДА · Оксана Лазарева</p>
+        <p>На канале — разборы родовых программ, истории клиентов и практики, которые помогают услышать себя и изменить сценарий с деньгами.</p>
+        <a class="btn btn-primary" href="https://t.me/putykschastyu" target="_blank" rel="noopener">Подписаться на канал в Telegram</a>
+        <button class="btn btn-secondary" id="btn-restart">Пройти заново</button>
+      </div>
+
+      <p class="footer-note">Это не диагноз и не окончательный вывод — интерактивный ориентир для самонаблюдения.</p>
+    </section>
+  </div>
+
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <button class="modal-close" id="modal-close" aria-label="Закрыть">&times;</button>
+      <h3 id="modal-title"></h3>
+      <div id="modal-body"></div>
+      <div class="channel-cta" style="margin-top:20px; padding:18px;">
+        <p style="margin-bottom:12px; font-size:13px;">Хотите разобрать свой сценарий глубже?</p>
+        <a class="btn btn-primary" href="https://t.me/putykschastyu" target="_blank" rel="noopener">Перейти в канал</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TREE_IMAGE = 'tree-life.png';
+
+    const ROOT_HOTSPOTS = [
+      { id: 'fear-poverty', left: 4, top: 72, w: 18, h: 22 },
+      { id: 'permission', left: 20, top: 76, w: 16, h: 20 },
+      { id: 'fear-big', left: 40, top: 78, w: 20, h: 18 },
+      { id: 'loyalty', left: 62, top: 76, w: 16, h: 20 },
+      { id: 'surpass', left: 78, top: 72, w: 18, h: 22 }
+    ];
+
+    function buildParticles(count) {
+      const colors = ['#ff00aa', '#ff1493', '#e879f9', '#c084fc', '#f0abfc', '#ec4899'];
+      return Array.from({ length: count }, (_, i) => {
+        const left = 10 + (i * 17 + (i % 3) * 11) % 85;
+        const top = 15 + (i * 23) % 70;
+        const delay = (i * 0.35) % 3;
+        const size = 2 + (i % 3);
+        const color = colors[i % colors.length];
+        return `<span class="tree-particle" style="left:${left}%;top:${top}%;width:${size}px;height:${size}px;animation-delay:${delay}s;background:${color};box-shadow:0 0 8px ${color}"></span>`;
+      }).join('');
+    }
+
+    function buildTreeScene(options = {}) {
+      const {
+        growth = 5,
+        litRoots = [0, 1, 2, 3, 4],
+        interactive = false,
+        showScan = false,
+        fullCanopy = true
+      } = options;
+
+      const canopyGreen = fullCanopy ? 1 : Math.min(growth / 5, 1);
+      const sceneBright = fullCanopy ? 1 : 0.5 + growth * 0.1;
+      const particleCount = fullCanopy ? 14 : Math.max(4, growth * 2);
+
+      const glows = ROOT_HOTSPOTS.map((spot, i) => {
+        const lit = litRoots.includes(i);
+        return `<div class="root-glow-spot${lit ? ' lit' : ''}" style="left:${spot.left}%;top:${spot.top}%;width:${spot.w}%;height:${spot.h}%"></div>`;
+      }).join('');
+
+      const hotspots = interactive
+        ? ROOT_HOTSPOTS.map(spot =>
+            `<button type="button" class="root-hotspot" data-root-id="${spot.id}" style="left:${spot.left}%;top:${spot.top}%;width:${spot.w}%;height:${spot.h}%" aria-label="Исследовать корень"></button>`
+          ).join('')
+        : '';
+
+      return `
+        <div class="tree-scene" style="--canopy-green:${canopyGreen};--scene-bright:${sceneBright}">
+          <img src="${TREE_IMAGE}" class="tree-art tree-art--base" alt="Дерево жизни — денежная карта рода" width="800" height="1200">
+          <img src="${TREE_IMAGE}" class="tree-art tree-art--green" alt="" aria-hidden="true">
+          <div class="tree-mood-overlay" aria-hidden="true"></div>
+          <div class="tree-canopy-tint" aria-hidden="true"></div>
+          <div class="tree-trunk-glow" aria-hidden="true"></div>
+          ${glows}
+          <div class="tree-particles">${buildParticles(particleCount)}</div>
+          ${showScan ? '<div class="tree-scan active" aria-hidden="true"></div>' : ''}
+          <div class="tree-hotspots">${hotspots}</div>
+        </div>`;
+    }
+
+    function mountTree(containerId, options) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      el.innerHTML = buildTreeScene(options);
+    }
+
+    function updateQuizTreeVisual() {
+      mountTree('quiz-tree', {
+        growth: currentQuestion,
+        litRoots: Array.from({ length: currentQuestion }, (_, i) => i),
+        fullCanopy: false
+      });
+    }
+
+    function bindResultTreeClicks() {
+      document.querySelectorAll('#result-tree .root-hotspot').forEach(btn => {
+        btn.addEventListener('click', () => openRootModal(btn.dataset.rootId));
+      });
+    }
+
+    const QUESTIONS = [
+      {
+        text: 'Когда появляются большие деньги, что обычно происходит?',
+        options: [
+          { text: 'появляются неожиданные расходы', scores: { fearBig: 2, loyalty: 1 } },
+          { text: 'становится тревожно', scores: { fearBig: 3, permission: -1 } },
+          { text: 'хочется быстро всё потратить', scores: { loyalty: 2, resource: -1 } },
+          { text: 'ничего особенного', scores: { resource: 2, permission: 1 } }
+        ]
+      },
+      {
+        text: 'Как в вашей семье говорили про богатых людей?',
+        options: [
+          { text: 'честным трудом не заработаешь', scores: { loyalty: 3, surpass: 1 } },
+          { text: 'деньги портят людей', scores: { loyalty: 2, fearBig: 2 } },
+          { text: 'богатые жадные', scores: { loyalty: 2, permission: -1 } },
+          { text: 'ничего такого не говорили', scores: { resource: 2, permission: 1 } }
+        ]
+      },
+      {
+        text: 'Что чаще чувствуется при повышении дохода?',
+        options: [
+          { text: 'вина', scores: { surpass: 3, permission: -2 } },
+          { text: 'страх', scores: { fearBig: 3, fearPoverty: 1 } },
+          { text: 'неловкость', scores: { surpass: 2, permission: -1 } },
+          { text: 'спокойствие', scores: { resource: 2, permission: 2 } }
+        ]
+      },
+      {
+        text: 'Кто в семье распоряжался деньгами?',
+        options: [
+          { text: 'мама', scores: { loyalty: 1 } },
+          { text: 'папа', scores: { loyalty: 1, surpass: 1 } },
+          { text: 'никто', scores: { fearPoverty: 2, resource: -1 } },
+          { text: 'постоянно были конфликты', scores: { fearPoverty: 2, fearBig: 2, loyalty: 2 } }
+        ]
+      },
+      {
+        text: 'При мысли о сумме 1 000 000 рублей возникает',
+        options: [
+          { text: 'радость', scores: { permission: 3, resource: 2 } },
+          { text: 'тревога', scores: { fearBig: 3 } },
+          { text: 'недоверие', scores: { fearPoverty: 2, loyalty: 1 } },
+          { text: 'пустота', scores: { permission: -2, resource: -1 } }
+        ]
+      }
+    ];
+
+    const ROOTS = {
+      'fear-poverty': {
+        title: 'Страх бедности',
+        origin: 'Часто формируется, когда в роду был опыт нехватки, потерь или нестабильности. Ребёнок «усваивает»: деньги ненадёжны, их может не хватить.',
+        manifestation: 'Сбережения копятся с тревогой или не копятся вовсе; любой расход вызывает напряжение; сложно тратить на себя.',
+        feeling: 'Тревога, сжатие, ощущение «ещё чуть-чуть — и всё рухнет».',
+        signs: 'Откладывание крупных решений, страх инвестировать в себя, постоянный контроль расходов.'
+      },
+      permission: {
+        title: 'Разрешение получать',
+        origin: 'Зависит от того, разрешали ли в семье хотеть большего, просить и принимать. Иногда «не высовывайся» становится негласным правилом.',
+        manifestation: 'Сложно назвать цену, принять подарок или комплимент; доход «упирается в потолок» без видимых причин.',
+        feeling: 'Смущение, неловкость, желание отдать или вернуть.',
+        signs: 'Обесценивание своего труда, синдром самозванца при росте дохода.'
+      },
+      'fear-big': {
+        title: 'Страх больших денег',
+        origin: 'Появляется, когда большие суммы ассоциировались с опасностью, завистью, конфликтами или «проклятием» в семейных историях.',
+        manifestation: 'Деньги приходят — и быстро уходят; неожиданные траты; внутренний запрет «держать много».',
+        feeling: 'Паника, желание избавиться от суммы, ощущение угрозы.',
+        signs: 'Саботаж перед крупной сделкой, траты «до нуля» после удачного периода.'
+      },
+      loyalty: {
+        title: 'Лояльность семейным ограничениям',
+        origin: 'Негласные правила рода: «у нас так не принято», «деньги — зло», «богатство — не для нашей семьи».',
+        manifestation: 'Бессознательное следование установкам предков даже когда они мешают росту.',
+        feeling: 'Вина за успех, ощущение предательства рода.',
+        signs: 'Отказ от возможностей «потому что не по-нашему», стыд за достаток.'
+      },
+      surpass: {
+        title: 'Запрет превосходить родителей',
+        origin: 'Детская лояльность: быть успешнее значит «оставить» или «обидеть» близких. Особенно сильно, если родители много жертвовали.',
+        manifestation: 'Доход растёт до определённого уровня и останавливается; страх «обогнать» маму или папу.',
+        feeling: 'Вина, стыд, желание спрятать успех.',
+        signs: 'Скрывание дохода от семьи, самосаботаж на пике, «потолок» около уровня родителей.'
+      }
+    };
+
+    const SCENARIOS = [
+      {
+        id: 'surpass',
+        name: '«Запрет превосходить родителей»',
+        desc: 'Ваши ответы указывают на признаки сценария, при котором рост дохода может сопровождаться виной или страхом «обогнать» близких. Это не приговор — а сигнал обратить внимание на невидимые границы, унаследованные из семьи.',
+        check: s => s.surpass >= 4
+      },
+      {
+        id: 'danger',
+        name: '«Деньги = опасность»',
+        desc: 'Похоже, большие суммы для вас могут ассоциироваться с тревогой или угрозой. Такой паттерн часто передаётся через семейные истории о потерях, конфликтах или нестабильности.',
+        check: s => s.fearBig >= 5
+      },
+      {
+        id: 'guilt',
+        name: '«Богатство вызывает чувство вины»',
+        desc: 'Ваши ответы говорят о возможной связи между доходом и внутренним напряжением. Возможно, в роду было правило «не выделяться» или «не брать больше, чем другим».',
+        check: s => s.loyalty >= 4 && s.permission <= 0
+      },
+      {
+        id: 'help-first',
+        name: '«Сначала всем помоги — потом думай о себе»',
+        desc: 'Есть признаки сценария, где собственные деньги отходят на второй план. Это может быть форма лояльности семейной системе, где забота о других ставилась выше личного благополучия.',
+        check: s => s.loyalty >= 3 && s.resource <= 2
+      },
+      {
+        id: 'mixed',
+        name: '«Смешанный родовой сценарий»',
+        desc: 'Ваши ответы показывают несколько пересекающихся установок — это частая картина. Родовые программы редко бывают «одной строкой»; они накладываются друг на друга и проявляются в разных сферах.',
+        check: () => true
+      }
+    ];
+
+    let currentQuestion = 0;
+    let answers = [];
+    let scores = {};
+
+    const screens = {
+      welcome: document.getElementById('screen-welcome'),
+      loading: document.getElementById('screen-loading'),
+      quiz: document.getElementById('screen-quiz'),
+      result: document.getElementById('screen-result')
+    };
+
+    function showScreen(name) {
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[name].classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetScores() {
+      scores = { resource: 0, permission: 0, fearBig: 0, loyalty: 0, fearPoverty: 0, surpass: 0 };
+      answers = [];
+      currentQuestion = 0;
+    }
+
+    mountTree('welcome-tree', { growth: 5, litRoots: [0, 1, 2, 3, 4], fullCanopy: true });
+
+    document.getElementById('btn-start').addEventListener('click', () => {
+      resetScores();
+      showScreen('loading');
+      runLoadingAnimation();
+    });
+
+    function runLoadingAnimation() {
+      mountTree('loading-tree', { growth: 0, litRoots: [], showScan: true, fullCanopy: false });
+
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          mountTree('loading-tree', {
+            growth: Math.min(i + 1, 3),
+            litRoots: Array.from({ length: i + 1 }, (_, j) => j),
+            showScan: i < 4,
+            fullCanopy: false
+          });
+        }, 500 + i * 650);
+      }
+
+      setTimeout(() => {
+        showScreen('quiz');
+        renderQuestion();
+      }, 4200);
+    }
+
+    function renderQuestion() {
+      const q = QUESTIONS[currentQuestion];
+      document.getElementById('question-num').textContent = `Вопрос ${currentQuestion + 1} из ${QUESTIONS.length}`;
+      document.getElementById('question-text').textContent = q.text;
+
+      document.getElementById('progress').innerHTML = QUESTIONS.map((_, i) => {
+        let cls = 'progress-dot';
+        if (i < currentQuestion) cls += ' done';
+        if (i === currentQuestion) cls += ' current';
+        return `<div class="${cls}"></div>`;
+      }).join('');
+
+      const optionsEl = document.getElementById('options');
+      optionsEl.innerHTML = q.options.map((opt, i) => `
+        <button class="option" data-index="${i}" type="button">
+          <span class="option-radio"></span>
+          <span>${opt.text}</span>
+        </button>
+      `).join('');
+
+      optionsEl.querySelectorAll('.option').forEach(btn => {
+        btn.addEventListener('click', () => selectAnswer(parseInt(btn.dataset.index, 10)));
+      });
+
+      updateQuizTreeVisual();
+    }
+
+    function selectAnswer(index) {
+      const q = QUESTIONS[currentQuestion];
+      answers.push(index);
+      Object.entries(q.options[index].scores).forEach(([k, v]) => {
+        scores[k] = (scores[k] || 0) + v;
+      });
+
+      currentQuestion++;
+      if (currentQuestion < QUESTIONS.length) {
+        updateQuizTreeVisual();
+        setTimeout(renderQuestion, 450);
+      } else {
+        updateQuizTreeVisual();
+        setTimeout(showResult, 650);
+      }
+    }
+
+    function level(value) {
+      if (value >= 3) return { label: 'высокий', cls: 'high' };
+      if (value >= 1) return { label: 'средний', cls: 'medium' };
+      if (value >= -1) return { label: 'средний', cls: 'medium' };
+      return { label: 'выражен', cls: 'low' };
+    }
+
+    function permissionLevel() {
+      if (scores.permission >= 3) return { label: 'высокое', cls: 'high' };
+      if (scores.permission >= 0) return { label: 'среднее', cls: 'medium' };
+      return { label: 'низкое', cls: 'low' };
+    }
+
+    function getActiveRoots() {
+      return [
+        { id: 'surpass', v: scores.surpass },
+        { id: 'fear-big', v: scores.fearBig },
+        { id: 'loyalty', v: scores.loyalty },
+        { id: 'fear-poverty', v: scores.fearPoverty },
+        { id: 'permission', v: -scores.permission }
+      ].sort((a, b) => b.v - a.v).filter(r => r.v > 0).slice(0, 4).map(r => r.id);
+    }
+
+    function showResult() {
+      showScreen('result');
+
+      mountTree('result-tree', {
+        growth: 5,
+        litRoots: [0, 1, 2, 3, 4],
+        interactive: true,
+        fullCanopy: true
+      });
+      bindResultTreeClicks();
+
+      const metrics = [
+        { name: 'Ресурс рода', ...level(scores.resource) },
+        { name: 'Разрешение получать', ...permissionLevel() },
+        { name: 'Страх больших денег', ...level(scores.fearBig), invertDisplay: true },
+        { name: 'Лояльность семейным ограничениям', ...level(scores.loyalty), invertDisplay: true },
+        { name: 'Потенциал роста', ...level(scores.resource + scores.permission - scores.fearBig) }
+      ];
+
+      document.getElementById('metrics').innerHTML = metrics.map(m => {
+        const displayCls = m.invertDisplay && m.cls === 'low' ? 'low' : m.invertDisplay && m.cls === 'high' ? 'high' : m.cls;
+        const displayLabel = m.invertDisplay && m.cls === 'low' ? 'выражен' : m.invertDisplay && m.cls === 'high' ? 'низкий' : m.label;
+        return `
+          <div class="metric">
+            <span class="metric-dot ${displayCls}"></span>
+            <span class="metric-label">${m.name}</span>
+            <span class="metric-value">${displayLabel}</span>
+          </div>`;
+      }).join('');
+
+      const scenario = SCENARIOS.find(s => s.check(scores)) || SCENARIOS[SCENARIOS.length - 1];
+      document.getElementById('scenario-name').textContent = scenario.name;
+      document.getElementById('scenario-desc').textContent = scenario.desc;
+
+      const activeRoots = getActiveRoots();
+      document.getElementById('root-chips').innerHTML = activeRoots.map(id => {
+        const r = ROOTS[id];
+        return `<button class="root-chip" data-root="${id}" type="button">🌳 ${r.title}</button>`;
+      }).join('');
+
+      document.querySelectorAll('.root-chip').forEach(btn => {
+        btn.addEventListener('click', () => openRootModal(btn.dataset.root));
+      });
+    }
+
+    function openRootModal(id) {
+      const root = ROOTS[id];
+      if (!root) return;
+      document.getElementById('modal-title').textContent = root.title;
+      document.getElementById('modal-body').innerHTML = `
+        <div class="modal-block"><strong>Откуда появляется</strong><p>${root.origin}</p></div>
+        <div class="modal-block"><strong>Как проявляется</strong><p>${root.manifestation}</p></div>
+        <div class="modal-block"><strong>Что обычно чувствует человек</strong><p>${root.feeling}</p></div>
+        <div class="modal-block"><strong>Признаки</strong><p>${root.signs}</p></div>
+      `;
+      document.getElementById('modal').classList.add('open');
+    }
+
+    document.getElementById('modal-close').addEventListener('click', () => {
+      document.getElementById('modal').classList.remove('open');
+    });
+
+    document.getElementById('modal').addEventListener('click', e => {
+      if (e.target.id === 'modal') document.getElementById('modal').classList.remove('open');
+    });
+
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      resetScores();
+      mountTree('welcome-tree', { growth: 5, litRoots: [0, 1, 2, 3, 4], fullCanopy: true });
+      showScreen('welcome');
+    });
+  </script>
+</body>
+</html>
